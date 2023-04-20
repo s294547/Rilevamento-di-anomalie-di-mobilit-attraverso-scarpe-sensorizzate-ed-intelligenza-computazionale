@@ -1,0 +1,285 @@
+%Creazione della matrice del mese di riferimento
+meseRif=zeros(30,17); 
+
+
+meseRif(1,:)=[0 1 1 1 3 3 1 0 0 2 3 3 1 1 1 1 0];
+meseRif(2,:)=[3 2 3 1 3 3 2 1 2 2 2 1 1 2 1 1 0];
+meseRif(3,:)=[0 2 1 1 1 1 1 1 1 1 1 2 1 1 1 1 0];
+meseRif(4,:)=[0 1 1 1 1 1 3 3 3 3 3 1 1 1 1 1 0];
+meseRif(5,:)=[0 2 1 1 1 1 1 1 1 4 4 4 4 1 1 1 0];
+meseRif(6,:)=[0 2 3 3 1 1 2 3 2 1 1 1 2 1 1 1 0];
+meseRif(7,:)=[0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0];
+meseRif(8,:)=[0 0 1 3 3 3 4 1 0 1 3 3 1 1 1 1 1];
+meseRif(9,:)=[0 0 0 2 1 1 1 2 1 1 1 1 1 1 1 0 0];
+meseRif(10,:)=[0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0];
+meseRif(11,:)=[0 2 1 1 1 1 1 1 1 1 1 1 2 1 1 1 0];
+meseRif(12,:)=[0 2 1 1 1 1 1 1 4 4 4 4 1 1 1 1 0];
+meseRif(13,:)=[0 3 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0];
+meseRif(14,:)=[0 1 1 1 3 3 3 0 0 0 1 1 1 1 1 1 1];
+meseRif(15,:)=[0 1 1 3 3 3 1 0 0 1 1 1 1 1 1 0 0];
+meseRif(16,:)=[0 1 1 1 1 1 1 1 1 1 1 2 1 1 1 1 0];
+meseRif(17,:)=[2 1 1 1 1 1 1 1 1 1 2 1 1 1 1 1 0];
+meseRif(18,:)=[0 1 2 1 1 1 1 1 2 3 3 3 1 1 1 1 0];
+meseRif(19,:)=[0 1 2 1 1 1 1 1 1 4 4 4 2 1 1 1 0];
+meseRif(20,:)=[0 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0];
+meseRif(21,:)=[0 0 1 2 3 3 1 0 0 1 1 1 1 1 1 1 0];
+meseRif(22,:)=[0 0 0 1 1 1 1 1 3 3 3 3 1 1 1 1 0];
+meseRif(23,:)=[0 2 1 1 1 1 1 1 1 1 1 1 1 2 1 1 0];
+meseRif(24,:)=[2 1 1 1 1 1 1 1 1 4 4 4 1 1 1 1 0];
+meseRif(25,:)=[2 1 1 1 1 1 1 1 2 1 3 3 1 1 1 0 0];
+meseRif(26,:)=[0 2 1 1 1 1 1 1 4 1 4 1 1 1 1 1 0];
+meseRif(27,:)=[2 1 1 1 1 1 1 1 1 1 1 1 1 2 1 1 0];
+meseRif(28,:)=[0 0 1 1 1 4 4 4 4 1 3 3 3 1 1 1 0];
+meseRif(29,:)=[0 0 4 3 1 1 1 1 1 1 1 1 0 1 1 1 1];
+meseRif(30,:)=[2 1 1 1 1 1 1 1 1 1 1 2 1 1 1 0 0];
+
+
+
+%Plot giorni dei 3 cluster differenti
+
+giorniUfficio=[7 10 11 13 17 20 23 30];
+giorniLab=[4 5 19 24 25 26];
+giorniSettimana=[6 8 14 15 22 28 29];
+
+%Calcolo delle somiglianze tra ciascun giorno e gli altri 29 in termini di
+%distanza euclidea
+
+somiglianze=zeros(30,30);
+
+for i=1:30
+    
+    for j=1:30
+        
+        somiglianze(i,j)=norm(meseRif(i,:)-meseRif(j,:));
+        
+    end
+    
+end
+
+%Normalizzazione delle somiglianze in interi compresi tra 0 e 1
+
+minimo=min(min(somiglianze));
+massimo=max(max(somiglianze));
+
+somNorm=(somiglianze-minimo)./(massimo-minimo);
+somNorm=1-somNorm;
+
+%Clustering sulle 30 giornate con FCM
+
+fuzziness=2;
+MaxStep = 100;
+minError = 0.0001;
+fcmOptions = [ fuzziness MaxStep minError true ];
+numeroClusters=3;
+[centers, U]=fcm(somNorm,numeroClusters,fcmOptions);
+
+
+%Calcolo delle anomalie per ciascun giorno del mese di riferimento
+
+anomalia=zeros(1,30);
+
+for i=1:30
+    
+    anomalia(1,i)= -(1/log2(length(U(:,i)))).*(sum(U(:,i).*log2(U(:,i))));
+  
+end
+ 
+
+
+
+
+%Dopo aver calcolato le anomalie dei 30 giorni abitudinari siamo riusciti a
+%calcolare la soglia che ci permette di ottenere la distinzione tra giorni
+%normali e anormali s*=0.8. Abbiamo distinto i 30 giorni del mese
+%abitudinario in normali e anormali.
+
+totGiorniNormali=0;
+for i=1:30
+	if anomalia(1,i)<=0.8
+		totGiorniNormali=totGiorniNormali+1;
+	end
+end
+
+giorniNormali=zeros(1, totGiorniNormali);
+posizGiorniNormali=1;
+for i=1:30
+	if anomalia(1,i)<=0.8
+		giorniNormali(1, posizGiorniNormali)=i;
+		posizGiorniNormali=posizGiorniNormali+1;
+	end
+end
+
+totGiorniAnomali=30-totGiorniNormali;
+giorniAnomali=zeros(1, totGiorniAnomali);
+posizGiorniAnomali=1;
+for i=1:30
+	if anomalia(1,i)>0.8
+		giorniAnomali(1, posizGiorniAnomali)=i;
+		posizGiorniAnomali=posizGiorniAnomali+1;
+	end
+end
+
+%Distinzione dei giorni normali in base ai cluster a cui appartengono
+%I cluster individuati sono 3: giorni sedentari, giorni in laboratorio,
+%giorni della settimana
+
+giorniSed=[3 7 9 10 11 13 16 17 20 23 27 30];
+giorniLab=[5 12 19 22 24 ];
+giorniSett=[14 15 21];
+
+%Rappresento sottoforma di matrice i dati relativi al mese in cui
+%il paziente è affetto da disturbo dipendente di personalità
+
+
+disturboDP=zeros(30,17);
+
+disturboDP(1,:)=[0 2 1 1 1 1 2 1 1 1 1 2 1 1 1 1 0];
+disturboDP(2,:)=[0 2.5 1 1 1 2.5 1 3 1 1 1 1 1 2 1 0 0];
+disturboDP(3,:)=[0 0 2.5 1 1 130/60 1 1 0 1 1 1 1 1 1 1 0];
+disturboDP(4,:)=[0 0 1 1 1 1 1 1 1 2 1 3 1 1 1 0 0];
+disturboDP(5,:)=[0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0];
+disturboDP(6,:)=[0 0 0 0 95/60 1 1 1 1 1 1 1 1 1 1 0 0];
+disturboDP(7,:)=[0 0 2.5 2 2.5 1 1 0 0 0 2 4 1 1 1 0 0];
+disturboDP(8,:)=[0 0 1 1 1 1 1 1 4 4 1 1 1 1 1 0 0];
+disturboDP(9,:)=[0 0 1 1 1 1 1 1 1 1 1 1 3 1 1 0 0];
+disturboDP(10,:)=[0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0];
+disturboDP(11,:)=[0 0 0 0 20/60 1 1 1 1 1 1 1 1 1 1 0 0];
+disturboDP(12,:)=[0 0 0 0 1 1 1 0 0 1 1 1 1 1 1 1 0];
+disturboDP(13,:)=[0 0 0 2.5 1 1 1 0 0 1 1 2 1 1 1 0 0];
+disturboDP(14,:)=[0 0 0 0 0 2 2 0 0 1 1 1 1 1 1 0 0];
+disturboDP(15,:)=[0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0];
+disturboDP(16,:)=[0 0 1 1 1 2 1 1 1 1 1 1 1 1 1 0 0];
+disturboDP(17,:)=[0 0 1 1 1 0 1 1 1 1 1 1 1 1 1 0 0];
+disturboDP(18,:)=[0 0 40/60 1 1 0 0 1 1 1 1 1 1 1 1 0 0];
+disturboDP(19,:)=[0 0 40/60 1 1 1 1 0 0 0 0 4 1 1 1 1 0];
+disturboDP(20,:)=[0 0 0 1 1 1 1 1 2 1 0 1 1 1 1 0 0];
+disturboDP(21,:)=[0 0 0 0 1 1 1 1 0 0 0 1 1 1 0 0 0];
+disturboDP(22,:)=[0 0 1 1 0 0 0 1 1 1 1 1 1 1 0 0 0];
+disturboDP(23,:)=[0 0 0 0 1 1 1 2 0 0 0 1 1 1 0 0 0];
+disturboDP(24,:)=[0 0 0 0 1 0 1 0 0 1 1 1 1 1 0 0 0];
+disturboDP(25,:)=[0 0 1 1 1 1 1 1 0 0 1 1 1 1 0 0 0];
+disturboDP(26,:)=[0 0 2 2 1 1 1 1 0 0 0 1 1 1 0 0 0];
+disturboDP(27,:)=[0 0 0 0 1 1 1 0 0 0 2 2 2 1 0 0 0];
+disturboDP(28,:)=[0 0 0 1 1 0 1 0 0 0 2 2 1 1 1 1 0];
+disturboDP(29,:)=[0 0 0 1 1 1 1 1 1 1 100/60 2 2 2 1 1 0];
+disturboDP(30,:)=[0 2 1 1 1 1 1 1 1 1 1 2 1 1 1 1 0];
+
+
+%calcolo le somiglianze dei 30 giorni di disturbo 
+%dipendente di personalità con i 30 giorni del diario di
+%riferimento
+
+
+somiglianzeDisturbo=zeros(30,30);
+
+for i=1:30
+    
+    for j=1:30
+        
+        somiglianzeDisturbo(i,j)=norm(disturboDP(i,:)-meseRif(j,:));
+        
+    end
+end
+
+%calcolo dei coefficenti di appartenenza dei giorni di depressione ai 3
+%cluster trovati precedentemente
+
+minimo=min(min(somiglianzeDisturbo));
+massimo=max(max(somiglianzeDisturbo));
+
+somDistNorm=(somiglianzeDisturbo - minimo)./ (massimo - minimo);
+somDistNorm=1 - somDistNorm;
+
+%Algoritmo che permette di calcolare i coefficienti di appartenenza 
+%ai cluster dei nuovi punti, senza ricalcolare 
+%i centri di questi ultimi.
+
+
+dst=distfcm(centers,somDistNorm);
+appoggio = dst.^(-2/(fuzziness-1));
+appartenenzaDisturboDP = appoggio ./(ones(numeroClusters, 1)*sum(appoggio));
+
+
+%calcolo delle anomalie esterne dei giorni con DDP
+
+anomalieDDP=zeros(1,30);
+for i=1:30
+    
+    anomalieDDP(1,i)=-(1/log2(length(appartenenzaDisturboDP(:,i)))).*(sum(appartenenzaDisturboDP(:,i).*log2(appartenenzaDisturboDP(:,i))));
+   if anomalieDDP(1,i)<= 0.8
+       anomalieDDP(1,i)=0;
+   else
+        anomalieDDP(1,i)=(anomalieDDP(1,i)-0.8)/(1-0.8);
+   end    
+end
+
+%Calcolo l'anomalia interna per ottenere l'indice di anomalia globale
+
+giorniSedentari=12; % Numero giorni del mese di riferimento appartenenti al cluster 2
+giorniAttivi=5; %Numero giorni del mese di riferimento appartenenti al cluster 1
+giorniRiposo=3; %Numero giorni del mese di riferimento appartenenti al cluster 3
+
+finestraSedentari=12;
+finestraAttivi=5;
+finestraRiposo=3;
+
+
+
+%Calcolo il numero di giorni non classificati anormali nel mese di
+%disturbo dipendente di personalità (cioè quelli che
+%influiscono sull'anomalia interna)
+
+contaGiorniNormali=0;
+indiciGiorniNormali=[];
+for i=1:30
+    
+    if anomalieDDP(1,i)==0 
+        contaGiorniNormali=contaGiorniNormali+1;
+        indiciGiorniNormali=cat(2,indiciGiorniNormali,i);
+    end
+end
+
+anomalieInterne=zeros(1,contaGiorniNormali);
+
+for i=1:contaGiorniNormali
+
+ %nuovo giorno aggiunto alla finestra   
+    k=indiciGiorniNormali(i);
+    if appartenenzaDisturboDP(1,k)>= 0.6
+        finestraAttivi=finestraAttivi+1;
+    end
+    if appartenenzaDisturboDP(2,k)>= 0.6
+        finestraSedentari=finestraSedentari+1;
+    end
+    if appartenenzaDisturboDP(3,k)>= 0.6
+        finestraRiposo=finestraRiposo+1;
+    end
+  %tolgo il più vecchio
+    if U(1,i)>=0.6
+          finestraAttivi=finestraAttivi-1;
+    end  
+    if U(2,i)>=0.6
+          finestraSedentari=finestraSedentari-1;
+    end
+    if U(3,i)>=0.6
+          finestraRiposo=finestraRiposo-1;
+    end
+%Formula di Jaccard per calcolare l'anomalia interna  
+    numeratore=min(giorniAttivi,finestraAttivi)+min(giorniSedentari,finestraSedentari)+min(giorniRiposo,finestraRiposo);
+    denom=max(giorniAttivi,finestraAttivi)+max(giorniSedentari,finestraSedentari)+max(giorniRiposo,finestraRiposo);
+    anomalieInterne(1,i)=numeratore/denom;
+
+end
+
+anomalieInterne=1-anomalieInterne;
+
+anomalieGlobali=zeros(1,30);
+
+for i=1:contaGiorniNormali
+    
+    k=indiciGiorniNormali(i);
+    anomalieGlobali(1,k)=anomalieInterne(i);
+end
+
+anomalieGlobali=anomalieGlobali+anomalieDDP;
+plot(anomalieGlobali);
